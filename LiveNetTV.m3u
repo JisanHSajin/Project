@@ -1,0 +1,13 @@
+#EXTM3U
+
+#EXTINF:-1 tvg-id="1" tvg-logo="https://example.com/somoytv.png" group-title="Bangla", Somoy TV
+https://link-to-stream/somoytv.m3u8
+
+#EXTINF:-1 tvg-id="2" tvg-logo="https://example.com/ntv.png" group-title="Bangla", NTV
+https://link-to-stream/ntv.m3u8
+
+#EXTINF:-1 tvg-id="3" tvg-logo="https://example.com/bbc.png" group-title="English News", BBC News
+https://link-to-stream/bbc.m3u8
+
+#EXTINF:-1 tvg-id="4" tvg-logo="https://example.com/cnn.png" group-title="English News", CNN
+https://link-to-stream/cnn.m3u8
