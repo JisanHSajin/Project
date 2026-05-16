@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:keepScreenOn="true">
+
+    <WebView
+        android:id="@+id/webView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:overScrollMode="never"
+        android:scrollbars="none"
+        android:background="@color/app_background"
+        android:visibility="gone" />
+
+    <!-- Startup Loading Screen -->
+    <LinearLayout
+        android:id="@+id/loading_layout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/app_background"
+        android:gravity="center"
+        android:orientation="vertical">
+
+        <ImageView
+            android:layout_width="128dp"
+            android:layout_height="128dp"
+            android:layout_marginBottom="24dp"
+            android:contentDescription="@string/app_name"
+            android:src="@mipmap/ic_launcher_foreground" />
+
+        <ProgressBar
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:indeterminateTint="@android:color/white" />
+    </LinearLayout>
+
+    <!-- Full-screen Video Container -->
+    <FrameLayout
+        android:id="@+id/custom_view_container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone" />
+
+    <!-- Gesture Controls (Volume & Brightness) -->
+    <RelativeLayout
+        android:id="@+id/gesture_overlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone">
+
+        <!-- Volume Zone (Left) -->
+        <View
+            android:id="@+id/left_gesture_zone"
+            android:layout_width="160dp"
+            android:layout_height="match_parent"
+            android:layout_alignParentStart="true"
+            android:layout_marginTop="50dp"
+            android:layout_marginBottom="80dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="@android:color/transparent" />
+
+        <!-- Brightness Zone (Right) -->
+        <View
+            android:id="@+id/right_gesture_zone"
+            android:layout_width="160dp"
+            android:layout_height="match_parent"
+            android:layout_alignParentEnd="true"
+            android:layout_marginTop="50dp"
+            android:layout_marginBottom="80dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="@android:color/transparent" />
+
+        <!-- Volume Slider UI -->
+        <LinearLayout
+            android:id="@+id/volume_container"
+            android:layout_width="45dp"
+            android:layout_height="220dp"
+            android:layout_alignParentStart="true"
+            android:layout_centerVertical="true"
+            android:layout_marginStart="40dp"
+            android:background="@drawable/rounded_gesture_bg"
+            android:padding="6dp"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:visibility="gone">
+
+            <ProgressBar
+                android:id="@+id/volume_slider"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:progressDrawable="@drawable/vertical_progress_drawable"
+                android:max="100" />
+
+            <ImageView
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:layout_marginTop="10dp"
+                android:layout_marginBottom="10dp"
+                android:src="@android:drawable/ic_lock_silent_mode_off"
+                android:contentDescription="@null"
+                android:tint="@android:color/white" />
+        </LinearLayout>
+
+        <!-- Brightness Slider UI -->
+        <LinearLayout
+            android:id="@+id/brightness_container"
+            android:layout_width="45dp"
+            android:layout_height="220dp"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:layout_marginEnd="40dp"
+            android:background="@drawable/rounded_gesture_bg"
+            android:padding="6dp"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:visibility="gone">
+
+            <ProgressBar
+                android:id="@+id/brightness_slider"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:progressDrawable="@drawable/vertical_progress_drawable"
+                android:max="100" />
+
+            <ImageView
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:layout_marginTop="10dp"
+                android:layout_marginBottom="10dp"
+                android:src="@android:drawable/ic_menu_compass"
+                android:contentDescription="@null"
+                android:tint="@android:color/white" />
+        </LinearLayout>
+    </RelativeLayout>
+</FrameLayout>
