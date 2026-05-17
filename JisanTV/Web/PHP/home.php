@@ -153,6 +153,16 @@ $premium_channels = $premium_active ? parseM3U(fetchM3U(PREMIUM_M3U_URL)) : [];
         .footer-social svg{width:24px;height:24px;fill:white;}
         .footer-social a:hover svg{fill:#00ffff;}
         
+        /* Anti-debug: disable text selection */
+        body {
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -khtml-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+        
         @media(max-width:768px){
             .site-header{flex-direction:column;text-align:center;}
             .main-layout{flex-direction:column;}
@@ -262,6 +272,120 @@ $premium_channels = $premium_active ? parseM3U(fetchM3U(PREMIUM_M3U_URL)) : [];
 </footer>
 
 <script>
+// ========== ENHANCED ANTI-DEBUG AND DEVICE PROTECTION ==========
+(function() {
+    // Block all context menus (right-click)
+    document.addEventListener('contextmenu', function(e) {
+        e.preventDefault();
+        return false;
+    });
+    
+    // Block F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+U, Ctrl+S, Ctrl+P, Ctrl+Shift+C, Ctrl+Shift+K
+    document.addEventListener('keydown', function(e) {
+        // F12
+        if (e.key === 'F12') {
+            e.preventDefault();
+            return false;
+        }
+        // Ctrl+Shift+I (Inspect), Ctrl+Shift+J (Console), Ctrl+Shift+C (Element picker), Ctrl+Shift+K (Console on Firefox)
+        if (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C' || e.key === 'K')) {
+            e.preventDefault();
+            return false;
+        }
+        // Ctrl+U (View source)
+        if (e.ctrlKey && (e.key === 'u' || e.key === 'U')) {
+            e.preventDefault();
+            return false;
+        }
+        // Ctrl+S (Save page)
+        if (e.ctrlKey && (e.key === 's' || e.key === 'S')) {
+            e.preventDefault();
+            return false;
+        }
+        // Ctrl+P (Print)
+        if (e.ctrlKey && (e.key === 'p' || e.key === 'P')) {
+            e.preventDefault();
+            return false;
+        }
+        // Ctrl+Shift+Delete (Clear cache/developer tools)
+        if (e.ctrlKey && e.shiftKey && e.key === 'Delete') {
+            e.preventDefault();
+            return false;
+        }
+    });
+    
+    // Disable drag and drop of images/links
+    document.addEventListener('dragstart', function(e) {
+        e.preventDefault();
+        return false;
+    });
+    
+    // Detect if devtools is open (debugger statement detection)
+    var devtools = function() {
+        var start = performance.now();
+        debugger;
+        var end = performance.now();
+        if (end - start > 100) {
+            // Devtools is open
+            document.body.innerHTML = '<div style="text-align:center;padding:50px;background:#111;color:red;"><h1>Access Denied</h1><p>Developer tools are not allowed on this site.</p><p>Please close devtools and refresh the page.</p></div>';
+            // Optionally redirect to a warning page or logout
+            // window.location.href = 'logout.php?msg=devtools';
+        }
+    };
+    
+    // Run detection periodically
+    setInterval(devtools, 1000);
+    
+    // Block console.log, console.error etc from being used by attackers (override console)
+    if (window.console) {
+        var noop = function() {};
+        var methods = ['log', 'debug', 'info', 'warn', 'error', 'table', 'trace', 'dir', 'dirxml', 'group', 'groupCollapsed', 'groupEnd', 'time', 'timeEnd', 'profile', 'profileEnd'];
+        for (var i = 0; i < methods.length; i++) {
+            if (console[methods[i]]) console[methods[i]] = noop;
+        }
+    }
+    
+    // Override toString to detect if devtools is inspecting functions
+    function detectDevTools() {
+        var element = new Error();
+        Object.defineProperty(element, 'stack', {
+            get: function() {
+                // Devtools is likely open
+                document.body.innerHTML = '<div style="text-align:center;padding:50px;background:#111;color:red;"><h1>Access Denied</h1><p>Developer tools detected.</p><p>Please close and refresh.</p></div>';
+                window.location.href = 'logout.php?msg=devtools_detected';
+            }
+        });
+        console.log(element);
+    }
+    
+    // Attempt to detect if page is being viewed in an iframe (some devtools use iframe injection)
+    if (window.self !== window.top) {
+        window.top.location = window.self.location;
+    }
+    
+    // Disable copy, cut, paste on the entire page
+    document.addEventListener('copy', function(e) { e.preventDefault(); return false; });
+    document.addEventListener('cut', function(e) { e.preventDefault(); return false; });
+    document.addEventListener('paste', function(e) { e.preventDefault(); return false; });
+    
+    // Disable text selection via mouse (already in CSS, but enforce)
+    document.body.style.userSelect = 'none';
+    document.body.style.webkitUserSelect = 'none';
+    document.body.style.msUserSelect = 'none';
+    
+    // Detect if browser console is opened via window size change (devtools usually changes viewport)
+    var checkDevToolsInterval = setInterval(function() {
+        var widthThreshold = window.outerWidth - window.innerWidth > 200;
+        var heightThreshold = window.outerHeight - window.innerHeight > 200;
+        if (widthThreshold || heightThreshold) {
+            clearInterval(checkDevToolsInterval);
+            document.body.innerHTML = '<div style="text-align:center;padding:50px;background:#111;color:red;"><h1>Access Denied</h1><p>Developer tools detected. Please close them to continue.</p></div>';
+            window.location.href = 'logout.php?msg=devtools_dimension';
+        }
+    }, 1500);
+})();
+
+// ========== EXISTING SCRIPT ==========
 let hls = null;
 
 function getStreamType(url) {
@@ -370,14 +494,6 @@ function filterCategory(category, event) {
         block.style.display = (category === "all" || cat === category) ? "block" : "none";
     });
 }
-
-// Security
-document.addEventListener('contextmenu', e => e.preventDefault());
-document.addEventListener('keydown', e => {
-    if(e.key === "F12" || (e.ctrlKey && e.shiftKey && (e.key === "I" || e.key === "J")) || (e.ctrlKey && e.key === "u")) {
-        e.preventDefault();
-    }
-});
 
 // Volume control
 document.addEventListener("keydown", e => {
