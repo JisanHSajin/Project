@@ -12,7 +12,6 @@ if (!isset($_SESSION['user_id'])) {
 $user_id = $_SESSION['user_id'];
 $device_manager = new DeviceManager($conn);
 
-// Session validation
 $stmt = $conn->prepare("SELECT password FROM users WHERE id = ?");
 $stmt->bind_param("i", $user_id);
 $stmt->execute();
@@ -31,7 +30,6 @@ if ($result->num_rows > 0) {
     exit;
 }
 
-// Device validation
 $device_id = $device_manager->getDeviceFingerprint();
 $device_check = $conn->prepare("SELECT id FROM device_tokens WHERE user_id = ? AND device_id = ? AND is_active = 1");
 $device_check->bind_param("is", $user_id, $device_id);
@@ -88,7 +86,6 @@ function parseM3U($data) {
     return $channels;
 }
 
-// Check premium status
 $premium_active = false;
 $stmt = $conn->prepare("SELECT * FROM subscriptions WHERE user_id = ? AND status = 'active' AND expires_at >= CURDATE()");
 $stmt->bind_param("i", $user_id);
@@ -98,6 +95,15 @@ $stmt->close();
 
 $free_channels = parseM3U(fetchM3U(FREE_M3U_URL));
 $premium_channels = $premium_active ? parseM3U(fetchM3U(PREMIUM_M3U_URL)) : [];
+
+$is_mobile_app = false;
+$user_agent = $_SERVER['HTTP_USER_AGENT'] ?? '';
+if (stripos($user_agent, 'JisanTV') !== false || 
+    stripos($user_agent, 'JisanRealTV') !== false ||
+    stripos($user_agent, 'wv') !== false ||
+    (stripos($user_agent, 'Android') !== false && stripos($user_agent, 'wv') !== false)) {
+    $is_mobile_app = true;
+}
 ?>
 
 <!DOCTYPE html>
@@ -148,12 +154,119 @@ $premium_channels = $premium_active ? parseM3U(fetchM3U(PREMIUM_M3U_URL)) : [];
         .lockbox{padding:30px;text-align:center;background:#1a1a1a;margin:0 30px 30px;border-radius:15px;border:1px solid red;}
         .lockbox a{color:lime;font-size:18px;}
         
+        .app-ad-banner {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border: 1px solid #00ffff44;
+            border-radius: 16px;
+            margin: 20px 30px;
+            padding: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 5px 20px rgba(0,255,255,0.1);
+        }
+        .app-ad-banner::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(0,255,255,0.1) 0%, transparent 70%);
+            animation: pulse 4s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 0.3; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(1.05); }
+            100% { opacity: 0.3; transform: scale(1); }
+        }
+        .app-ad-content {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            z-index: 2;
+            flex: 2;
+        }
+        .app-ad-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #00ffff, #0066ff);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            box-shadow: 0 0 15px rgba(0,255,255,0.5);
+        }
+        .app-ad-text h3 {
+            color: #00ffff;
+            font-size: 20px;
+            margin-bottom: 5px;
+        }
+        .app-ad-text p {
+            color: #ccc;
+            font-size: 14px;
+        }
+        .app-ad-buttons {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            z-index: 2;
+        }
+        .app-download-btn {
+            background: linear-gradient(135deg, #00ffff, #0066ff);
+            color: #000;
+            text-decoration: none;
+            padding: 12px 24px;
+            border-radius: 40px;
+            font-weight: bold;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            transition: 0.3s;
+            box-shadow: 0 3px 10px rgba(0,255,255,0.3);
+        }
+        .app-download-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,255,255,0.5);
+            background: linear-gradient(135deg, #00ddff, #0055dd);
+        }
+        .app-download-btn.secondary {
+            background: linear-gradient(135deg, #ff6600, #ff0066);
+            box-shadow: 0 3px 10px rgba(255,102,0,0.3);
+        }
+        .app-download-btn.secondary:hover {
+            box-shadow: 0 8px 25px rgba(255,102,0,0.5);
+        }
+        .close-ad {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 18px;
+            padding: 0 8px;
+            border-radius: 50%;
+            z-index: 3;
+            transition: 0.3s;
+        }
+        .close-ad:hover {
+            background: rgba(255,255,255,0.4);
+            color: #ff4444;
+        }
+        
         .site-footer{background:#1a1a1a;padding:30px;text-align:center;border-top:1px solid #00ffff22;margin-top:40px;}
         .footer-social{display:flex;justify-content:center;gap:20px;margin-bottom:15px;}
         .footer-social svg{width:24px;height:24px;fill:white;}
         .footer-social a:hover svg{fill:#00ffff;}
         
-        /* Anti-debug: disable text selection */
         body {
             -webkit-touch-callout: none;
             -webkit-user-select: none;
@@ -172,6 +285,12 @@ $premium_channels = $premium_active ? parseM3U(fetchM3U(PREMIUM_M3U_URL)) : [];
             .grid{grid-template-columns:repeat(2,1fr);gap:12px;padding:0 12px 18px;}
             h2,.category-title{margin:15px 12px;}
             .search-box,.category-filter{padding:10px 12px;}
+            .app-ad-banner { margin: 15px 12px; flex-direction: column; text-align: center; }
+            .app-ad-content { justify-content: center; }
+        }
+        
+        .mobile-app-hidden {
+            display: none !important;
         }
     </style>
 </head>
@@ -187,7 +306,7 @@ $premium_channels = $premium_active ? parseM3U(fetchM3U(PREMIUM_M3U_URL)) : [];
     <nav class="site-nav">
         <a href="#channels">Channels</a>
         <a href="#footer">Connect</a>
-        <a href="https://1drv.ms/f/c/225b49be92146505/IgAZYbUr6t6CSoJNmXaH1dPjAR1bvN6jE251DavjX3N-Uu0" target="_blank">App</a>
+        <a href="https://apkpure.com/developer?id=41147142" target="_blank">App</a>
     </nav>
     <div class="header-right">
         <?php if(isset($_SESSION['user_id'])): ?>
@@ -200,6 +319,25 @@ $premium_channels = $premium_active ? parseM3U(fetchM3U(PREMIUM_M3U_URL)) : [];
         <?php endif; ?>
     </div>
 </header>
+
+<div class="app-ad-banner <?php echo $is_mobile_app ? 'mobile-app-hidden' : ''; ?>" id="mainAdBanner">
+    <button class="close-ad" onclick="document.getElementById('mainAdBanner').style.display='none';">×</button>
+    <div class="app-ad-content">
+        <div class="app-ad-icon">📺</div>
+        <div class="app-ad-text">
+            <h3>🔥 Get JisanTV Mobile App!</h3>
+            <p>Watch 1000+ live channels on your phone - Better experience, less buffering!</p>
+        </div>
+    </div>
+    <div class="app-ad-buttons">
+        <a href="https://apkpure.com/p/com.jisanhsajin.jisantv" target="_blank" class="app-download-btn">
+            📱 JisanTV
+        </a>
+        <a href="https://apkpure.com/p/com.jisanhsajin.jisanrealtv" target="_blank" class="app-download-btn secondary">
+            🎬 JisanRealTV
+        </a>
+    </div>
+</div>
 
 <div class="main-layout">
     <div class="left-side">
@@ -272,71 +410,47 @@ $premium_channels = $premium_active ? parseM3U(fetchM3U(PREMIUM_M3U_URL)) : [];
 </footer>
 
 <script>
-// ========== ENHANCED ANTI-DEBUG AND DEVICE PROTECTION ==========
 (function() {
-    // Block all context menus (right-click)
     document.addEventListener('contextmenu', function(e) {
         e.preventDefault();
         return false;
     });
     
-    // Block F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+U, Ctrl+S, Ctrl+P, Ctrl+Shift+C, Ctrl+Shift+K
     document.addEventListener('keydown', function(e) {
-        // F12
         if (e.key === 'F12') {
             e.preventDefault();
             return false;
         }
-        // Ctrl+Shift+I (Inspect), Ctrl+Shift+J (Console), Ctrl+Shift+C (Element picker), Ctrl+Shift+K (Console on Firefox)
         if (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C' || e.key === 'K')) {
             e.preventDefault();
             return false;
         }
-        // Ctrl+U (View source)
-        if (e.ctrlKey && (e.key === 'u' || e.key === 'U')) {
+        if (e.ctrlKey && (e.key === 'u' || e.key === 'U' || e.key === 's' || e.key === 'S')) {
             e.preventDefault();
             return false;
         }
-        // Ctrl+S (Save page)
-        if (e.ctrlKey && (e.key === 's' || e.key === 'S')) {
-            e.preventDefault();
-            return false;
-        }
-        // Ctrl+P (Print)
         if (e.ctrlKey && (e.key === 'p' || e.key === 'P')) {
-            e.preventDefault();
-            return false;
-        }
-        // Ctrl+Shift+Delete (Clear cache/developer tools)
-        if (e.ctrlKey && e.shiftKey && e.key === 'Delete') {
             e.preventDefault();
             return false;
         }
     });
     
-    // Disable drag and drop of images/links
     document.addEventListener('dragstart', function(e) {
         e.preventDefault();
         return false;
     });
     
-    // Detect if devtools is open (debugger statement detection)
     var devtools = function() {
         var start = performance.now();
         debugger;
         var end = performance.now();
         if (end - start > 100) {
-            // Devtools is open
             document.body.innerHTML = '<div style="text-align:center;padding:50px;background:#111;color:red;"><h1>Access Denied</h1><p>Developer tools are not allowed on this site.</p><p>Please close devtools and refresh the page.</p></div>';
-            // Optionally redirect to a warning page or logout
-            // window.location.href = 'logout.php?msg=devtools';
         }
     };
     
-    // Run detection periodically
     setInterval(devtools, 1000);
     
-    // Block console.log, console.error etc from being used by attackers (override console)
     if (window.console) {
         var noop = function() {};
         var methods = ['log', 'debug', 'info', 'warn', 'error', 'table', 'trace', 'dir', 'dirxml', 'group', 'groupCollapsed', 'groupEnd', 'time', 'timeEnd', 'profile', 'profileEnd'];
@@ -345,35 +459,18 @@ $premium_channels = $premium_active ? parseM3U(fetchM3U(PREMIUM_M3U_URL)) : [];
         }
     }
     
-    // Override toString to detect if devtools is inspecting functions
-    function detectDevTools() {
-        var element = new Error();
-        Object.defineProperty(element, 'stack', {
-            get: function() {
-                // Devtools is likely open
-                document.body.innerHTML = '<div style="text-align:center;padding:50px;background:#111;color:red;"><h1>Access Denied</h1><p>Developer tools detected.</p><p>Please close and refresh.</p></div>';
-                window.location.href = 'logout.php?msg=devtools_detected';
-            }
-        });
-        console.log(element);
-    }
-    
-    // Attempt to detect if page is being viewed in an iframe (some devtools use iframe injection)
     if (window.self !== window.top) {
         window.top.location = window.self.location;
     }
     
-    // Disable copy, cut, paste on the entire page
     document.addEventListener('copy', function(e) { e.preventDefault(); return false; });
     document.addEventListener('cut', function(e) { e.preventDefault(); return false; });
     document.addEventListener('paste', function(e) { e.preventDefault(); return false; });
     
-    // Disable text selection via mouse (already in CSS, but enforce)
     document.body.style.userSelect = 'none';
     document.body.style.webkitUserSelect = 'none';
     document.body.style.msUserSelect = 'none';
     
-    // Detect if browser console is opened via window size change (devtools usually changes viewport)
     var checkDevToolsInterval = setInterval(function() {
         var widthThreshold = window.outerWidth - window.innerWidth > 200;
         var heightThreshold = window.outerHeight - window.innerHeight > 200;
@@ -385,7 +482,6 @@ $premium_channels = $premium_active ? parseM3U(fetchM3U(PREMIUM_M3U_URL)) : [];
     }, 1500);
 })();
 
-// ========== EXISTING SCRIPT ==========
 let hls = null;
 
 function getStreamType(url) {
@@ -495,12 +591,27 @@ function filterCategory(category, event) {
     });
 }
 
-// Volume control
 document.addEventListener("keydown", e => {
     let video = document.getElementById("video");
     if(!video) return;
     if(e.key === "ArrowUp") { e.preventDefault(); video.volume = Math.min(1, video.volume + 0.1); }
     if(e.key === "ArrowDown") { e.preventDefault(); video.volume = Math.max(0, video.volume - 0.1); }
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    <?php if(!$is_mobile_app): ?>
+    if(localStorage.getItem('mainAdClosed') === 'true') {
+        const banner = document.getElementById('mainAdBanner');
+        if(banner) banner.style.display = 'none';
+    }
+    
+    const closeBtn = document.querySelector('#mainAdBanner .close-ad');
+    if(closeBtn) {
+        closeBtn.addEventListener('click', function() {
+            localStorage.setItem('mainAdClosed', 'true');
+        });
+    }
+    <?php endif; ?>
 });
 </script>
 </body>
